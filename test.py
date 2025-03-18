@@ -27,7 +27,6 @@ FRAME_PROCESSING_INTERVAL = 5
 frame_count = 0
 
 def recognize_faces(frame):
-    """Detects and recognizes faces in the given frame."""
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     small_frame = cv2.resize(rgb_frame, (0, 0), fx=0.25, fy=0.25) 
     face_locations = face_recognition.face_locations(small_frame)
@@ -50,7 +49,6 @@ def recognize_faces(frame):
     return face_locations, face_names
 
 def update_frame():
-    """Captures video frames and updates the UI."""
     global frame_count
     ret, frame = cap.read()
     if not ret:
@@ -73,11 +71,9 @@ def update_frame():
     root.after(10, update_frame) 
 
 def start_video():
-    """Runs video processing in a separate thread for UI responsiveness."""
     threading.Thread(target=update_frame, daemon=True).start()
 
 def close_app():
-    """Releases resources and closes the app."""
     cap.release()
     root.destroy()
 

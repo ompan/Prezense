@@ -8,32 +8,28 @@ from PIL import Image, ImageTk
 import threading
 from sklearn.neighbors import KDTree
 
-# Load known face encodings and names
 encoding_file = "Known_faces/face_encodings.npy"
 
 if os.path.exists(encoding_file):
     data = np.load(encoding_file, allow_pickle=True).item()
-    known_encodings = np.array(data['encodings'])  # Convert to NumPy array for efficiency
+    known_encodings = np.array(data['encodings'])
     known_names = data['names']
     if known_encodings.size > 0:
-        tree = KDTree(known_encodings)  # Use KDTree for efficient nearest neighbor search
+        tree = KDTree(known_encodings)
 else:
     known_encodings = np.array([])
     known_names = []
     tree = None
 
-# Initialize webcam
 cap = cv2.VideoCapture(0)
 
-# Process every nth frame for efficiency
 FRAME_PROCESSING_INTERVAL = 5
 frame_count = 0
 
 def recognize_faces(frame):
     """Detects and recognizes faces in the given frame."""
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    small_frame = cv2.resize(rgb_frame, (0, 0), fx=0.25, fy=0.25)  # Resize for faster processing
-
+    small_frame = cv2.resize(rgb_frame, (0, 0), fx=0.25, fy=0.25) 
     face_locations = face_recognition.face_locations(small_frame)
     face_encodings = face_recognition.face_encodings(small_frame, face_locations)
 
@@ -41,7 +37,7 @@ def recognize_faces(frame):
     for encoding in face_encodings:
         if tree is not None:
             distances, indices = tree.query([encoding], k=1)
-            if distances[0][0] < 0.5:  # Set threshold for match
+            if distances[0][0] < 0.5: 
                 name = known_names[indices[0][0]]
             else:
                 name = "Unknown"
@@ -49,7 +45,6 @@ def recognize_faces(frame):
             name = "Unknown"
         face_names.append(name)
 
-    # Scale back face locations
     face_locations = [(top * 4, right * 4, bottom * 4, left * 4) for top, right, bottom, left in face_locations]
 
     return face_locations, face_names
@@ -75,7 +70,7 @@ def update_frame():
     lbl_video.imgtk = imgtk
     lbl_video.configure(image=imgtk)
 
-    root.after(10, update_frame)  # Repeat
+    root.after(10, update_frame) 
 
 def start_video():
     """Runs video processing in a separate thread for UI responsiveness."""
@@ -86,7 +81,6 @@ def close_app():
     cap.release()
     root.destroy()
 
-# Initialize Tkinter UI
 root = tk.Tk()
 root.title("Optimized Face Recognition System")
 

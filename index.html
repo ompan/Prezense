@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; transition: background 0.3s, color 0.3s; }
+        .dark-mode { background-color: #121212; color: white; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; border: none; border-radius: 5px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        #video_feed { display: none; border: 2px solid #007bff; }
+    </style>
+</head>
+<body>
+    <button onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <h2>Face Recognition System</h2>
+    
+    <h3>Register New Face</h3>
+    <input type="text" id="username" placeholder="Enter your name">
+    <button class="btn-primary" onclick="startCountdown()">Start Registration</button>
+    <p id="status"></p>
+    
+    <h3>Live Face Detection</h3>
+    <button class="btn-primary" onclick="startDetection()">Start Detection</button>
+    <button class="btn-danger" onclick="stopDetection()">Stop Detection</button>
+    <br><br>
+    <img id="video_feed" src="" width="640" height="480">
+    
+    <script>
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+        
+        function startCountdown() {
+            let countdown = 3;
+            const status = document.getElementById("status");
+            status.innerText = `Starting in ${countdown}...`;
+            
+            const interval = setInterval(() => {
+                countdown--;
+                status.innerText = countdown > 0 ? `Starting in ${countdown}...` : "Capturing Face...";
+                
+                if (countdown === 0) {
+                    clearInterval(interval);
+                    registerFace();
+                }
+            }, 1000);
+        }
+
+        function registerFace() {
+            const username = document.getElementById("username").value.trim();
+            if (!username) {
+                alert("Enter a valid name!");
+                return;
+            }
+            
+            const ws = new WebSocket(`ws://localhost:8000/register/${username}`);
+            ws.onmessage = (event) => {
+                document.getElementById("status").innerText = event.data;
+                if (event.data.includes("completed")) {
+                    ws.close();
+                }
+            };
+        }
+
+        function startDetection() {
+            document.getElementById("video_feed").src = "http://localhost:8000/video_feed";
+            document.getElementById("video_feed").style.display = "block";
+        }
+
+        function stopDetection() {
+            document.getElementById("video_feed").src = "";
+            document.getElementById("video_feed").style.display = "none";
+        }
+    </script>
+</body>
+</html>

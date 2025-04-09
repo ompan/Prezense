@@ -1,120 +1,111 @@
 import cv2
 import face_recognition
 import numpy as np
-import os
 import tkinter as tk
-from tkinter import messagebox
 from PIL import Image, ImageTk
-from sklearn.neighbors import KDTree
 import time
+import hnswlib
+import torch
 
 class FaceRecognitionApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Face Recognition System")
+        self.root.title("Face Recognition")
+        self.root.geometry("800x600")
+        
+        # Video capture
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
-            messagebox.showerror("Error", "Could not open webcam")
+            tk.messagebox.showerror("Error", "Could not open webcam")
             self.root.destroy()
             return
-
-        self.encoding_file = "face_data.npy"
-        self.known_encodings = np.array([])
-        self.known_names = []
-        self.tree = None
-        self.load_known_faces()        
-        self.setup_ui()
-        self.frame_count = 0
-        self.processing_times = []
-        self.frame_skip = 5
-        self.threshold = 0.5
+        
+        # Face recognition data
+        self.face_data = {"encodings": np.array([]), "names": []}
+        self.index = None
+        self.load_face_data()
+        
+        # UI Elements
+        self.video_label = tk.Label(self.root)
+        self.video_label.pack(fill=tk.BOTH, expand=True)
+        
         self.running = True
         self.update_frame()
 
-    def setup_ui(self):
-        self.video_label = tk.Label(self.root)
-        self.video_label.pack(pady=10)
-        btn_frame = tk.Frame(self.root)
-        btn_frame.pack(pady=10)
-        self.start_btn = tk.Button(btn_frame, text="Start", command=self.start, width=10)
-        self.start_btn.pack(side=tk.LEFT, padx=5)
-        self.stop_btn = tk.Button(btn_frame, text="Stop", command=self.stop, width=10)
-        self.stop_btn.pack(side=tk.LEFT, padx=5)
-        self.exit_btn = tk.Button(btn_frame, text="Exit", command=self.close, width=10)
-        self.exit_btn.pack(side=tk.LEFT, padx=5)
-        self.status_label = tk.Label(self.root, text="Ready")
-        self.status_label.pack(pady=5)
-        self.stats_label = tk.Label(self.root, text="")
-        self.stats_label.pack(pady=5)
-
-    def load_known_faces(self):
-        if os.path.exists(self.encoding_file):
-            try:
-                data = np.load(self.encoding_file, allow_pickle=True).item()
-                self.known_encodings = np.array(data['encodings'])
-                self.known_names = data['names']
-                if len(self.known_encodings) > 0:
-                    self.tree = KDTree(self.known_encodings)
-                    self.update_status(f"Loaded {len(self.known_names)} faces")
-            except Exception as e:
-                messagebox.showwarning("Warning", f"Load error: {str(e)}")
-                self.known_encodings = np.array([])
-
-    def process_frame(self, frame):
-        start = time.time()
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        small = cv2.resize(rgb, (0, 0), fx=0.25, fy=0.25)
-        locations = face_recognition.face_locations(small)
-        encodings = face_recognition.face_encodings(small, locations)
-        
-        names = []
-        for encoding in encodings:
-            if self.tree and len(self.known_encodings) > 0:
-                dist, idx = self.tree.query([encoding], k=1)
-                name = self.known_names[idx[0][0]] if dist[0][0] < self.threshold else "Unknown"
-            else:
-                name = "Unknown"
-            names.append(name)
-        
-        locations = [(t*4, r*4, b*4, l*4) for t, r, b, l in locations]
-        self.processing_times.append(time.time() - start)
-        return locations, names
-
     def update_frame(self):
-        if not self.running: return
-        ret, frame = self.cap.read()
-        if not ret:
-            self.update_status("Camera error")
+        if not self.running:
             return
         
-        self.frame_count += 1
-        if self.frame_count % self.frame_skip == 0:
-            locations, names = self.process_frame(frame)
-            for (t, r, b, l), name in zip(locations, names):
-                cv2.rectangle(frame, (l, t), (r, b), (0, 255, 0), 2)
-                cv2.putText(frame, name, (l, t-10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        ret, frame = self.cap.read()
+        if not ret:
+            return
         
+        start_time = time.time()
+        face_count = self.process_faces(frame)
+        processing_time = (time.time() - start_time) * 1000
+        
+        # Display frame
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         self.video_label.img = ImageTk.PhotoImage(image=img)
         self.video_label.config(image=self.video_label.img)
-        if self.frame_count % 30 == 0 and self.processing_times:
-            avg = sum(self.processing_times)/len(self.processing_times)
-            self.stats_label.config(text=f"Avg: {avg*1000:.1f}ms | FPS: {1/avg:.1f}" if avg > 0 else "")
-            self.processing_times = []
-        self.root.after(10, self.update_frame)
+        
+        # Schedule next update
+        self.root.after(10, self.update_frame())
+    
+    def process_faces(self, frame):
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    def start(self):
-        self.running = True
-        self.update_status("Running")
-        self.update_frame()
+        # Convert to YUV and apply histogram equalization on the Y channel
+        yuv = cv2.cvtColor(rgb, cv2.COLOR_RGB2YUV)
+        yuv[:, :, 0] = cv2.equalizeHist(yuv[:, :, 0])  # Apply hist. eq. to Y channel
+        equalized_rgb = cv2.cvtColor(yuv, cv2.COLOR_YUV2RGB)
 
-    def stop(self):
-        self.running = False
-        self.update_status("Paused")
-
-    def update_status(self, msg):
-        self.status_label.config(text=msg)
-
+        # Resize for speed
+        small_frame = cv2.resize(equalized_rgb, (0, 0), fx=0.5, fy=0.5)
+        
+        # Use CUDA if available
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        tensor_frame = torch.tensor(small_frame).to(device)
+        
+        face_locations = face_recognition.face_locations(small_frame)
+        face_encodings = face_recognition.face_encodings(small_frame, face_locations)
+        
+        for (top, right, bottom, left), encoding in zip(face_locations, face_encodings):
+            name = "Unknown"
+            
+            if self.index is not None and len(self.face_data["encodings"]) > 0:
+                labels, distances = self.index.knn_query(np.array([encoding]), k=1)
+                if distances[0][0] < 0.6:  # Threshold for recognition
+                    name = self.face_data["names"][labels[0][0]]
+            
+            # Scale back up the face locations
+            top *= 2; right *= 2; bottom *= 2; left *= 2
+            
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        
+        return len(face_locations)
+    
+    def load_face_data(self):
+        try:
+            data = np.load("Known_face/face_encodings.npy", allow_pickle=True).item()
+            encodings = np.array(data.get("encodings", []))
+            names = data.get("names", [])
+            
+            if len(encodings) > 0:
+                self.index = hnswlib.Index(space='l2', dim=encodings.shape[1])
+                self.index.init_index(max_elements=len(encodings), ef_construction=200, M=16)
+                self.index.add_items(encodings, np.arange(len(names)))
+                self.face_data["encodings"] = encodings
+                self.face_data["names"] = names
+                print(f"✅ Loaded {len(names)} face encodings.")
+            else:
+                self.index = None  # Ensure index is None if no encodings exist
+                print("⚠️ No encodings found. Skipping face matching.")
+        except Exception as e:
+            print(f"❌ Error loading face data: {e}")
+            self.index = None  # Prevent the app from breaking
+    
     def close(self):
         self.running = False
         if self.cap.isOpened():

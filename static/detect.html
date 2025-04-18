@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            transition: background-color 0.3s, color 0.3s;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #007bff;
+            margin-top: 20px;
+        }
+
+        button { 
+            padding: 12px 24px; 
+            margin: 10px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 5px; 
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+
+        /* Dark Mode Styles */
+        .dark-mode {
+            background-color: #121212;
+            color: #f1f1f1;
+        }
+        .dark-mode .btn-primary {
+            background-color: #1a73e8;
+        }
+        .dark-mode .btn-danger {
+            background-color: #e50f40;
+        }
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 14px;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+        }
+
+        /* Video Feed */
+        #video_feed {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            display: none;
+            margin-top: 20px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 20px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            .dark-mode-toggle {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 18px;
+            }
+
+            button {
+                font-size: 12px;
+                padding: 8px 16px;
+            }
+
+            .dark-mode-toggle {
+                padding: 4px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body onload="loadDarkMode()">
+    <!-- Dark Mode Toggle Button -->
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 Toggle Dark Mode</button>    
+
+    <!-- Main Content -->
+    <h2>Face Detection</h2>
+    <button class="btn-primary" onclick="startDetection()">Start Detection</button>
+    <button class="btn-danger" onclick="stopDetection()">Stop Detection</button>
+    
+    <br><br>
+    <!-- Video Feed -->
+    <img id="video_feed" src="" alt="Video Feed">
+
+    <script>
+        // Start Face Detection (Display video feed)
+        function startDetection() {
+            const video = document.getElementById("video_feed");
+            video.src = "/video_feed";
+            video.style.display = "block";
+        }
+
+        // Stop Face Detection (Hide video feed)
+        function stopDetection() {
+            const video = document.getElementById("video_feed");
+            video.src = "";
+            video.style.display = "none";
+        }
+
+        // Toggle Dark Mode
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+        }
+    
+        // Load Dark Mode based on previous user preference
+        function loadDarkMode() {
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+            }
+        }
+    </script>    
+</body>
+</html>

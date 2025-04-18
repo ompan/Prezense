@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      transition: background-color 0.3s, color 0.3s;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      color: #007bff;
+      margin-top: 20px;
+    }
+
+    input {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+      width: 250px;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+
+    .dark-mode {
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+
+    .dark-mode .btn-primary {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    .dark-mode .btn-danger {
+      background-color: #e50f40;
+    }
+
+    .dark-mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 8px 14px;
+      background-color: #333;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      h2 {
+        font-size: 22px;
+      }
+
+      input {
+        width: 80%;
+      }
+
+      button {
+        font-size: 14px;
+        padding: 10px 20px;
+      }
+
+      .dark-mode-toggle {
+        font-size: 14px;
+        padding: 6px 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h2 {
+        font-size: 18px;
+      }
+
+      input {
+        width: 90%;
+      }
+
+      button {
+        font-size: 12px;
+        padding: 8px 16px;
+      }
+
+      .dark-mode-toggle {
+        font-size: 12px;
+        padding: 4px 10px;
+      }
+    }
+  </style>
+</head>
+<body onload="loadDarkMode()">
+  <!-- Dark Mode Toggle Button -->
+  <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 Toggle Dark Mode</button>
+
+  <h2>Face Registration</h2>
+  <input type="text" id="username" placeholder="Enter your name" /><br>
+  <input type="text" id="regno" placeholder="Enter registration number" /><br>
+  <button class="btn-primary" id="registerBtn" onclick="startRegistration()">Start Registration</button>
+  <p id="status"></p>
+
+  <script>
+    function startRegistration() {
+      const username = document.getElementById("username").value.trim();
+      const regno = document.getElementById("regno").value.trim();
+      const status = document.getElementById("status");
+      const registerBtn = document.getElementById("registerBtn");
+
+      // Validate inputs
+      if (!username || !/^[a-zA-Z0-9_ ]+$/.test(username)) {
+        alert("❌ Enter a valid name (letters, numbers, spaces, and underscores only)!");
+        return;
+      }
+
+      if (!/^\d{9}$/.test(regno)) {
+        alert("❌ Enter a valid 9-digit registration number!");
+        return;
+      }
+
+      // Disable the button during registration
+      registerBtn.classList.add("btn-disabled");
+      registerBtn.disabled = true;
+      status.innerText = "🔄 Starting registration...";
+
+      // Correct WebSocket URL
+      const ws = new WebSocket(`ws://${window.location.host}/register/${encodeURIComponent(username)}/${regno}`);
+
+      ws.onmessage = (event) => {
+        status.innerText = event.data;
+        if (event.data.includes("completed")) {
+          ws.close();
+          registerBtn.disabled = false;
+        }
+      };
+
+      ws.onerror = () => {
+        status.innerText = "⚠️ WebSocket connection error!";
+        registerBtn.disabled = false;
+      };
+
+      ws.onclose = () => {
+        registerBtn.disabled = false;
+      };
+    }
+
+    // Toggle Dark Mode
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+    }
+
+    // Load Dark Mode based on previous user preference
+    function loadDarkMode() {
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark-mode");
+      }
+    }
+  </script>
+</body>
+</html>

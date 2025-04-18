@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Dashboard</title>
+    <style>
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-top: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Button Styles */
+        button {
+            padding: 12px 24px;
+            margin: 12px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: #007bff;
+            padding: 12px 10px;
+        }
+
+        .navbar a {
+            color: white;
+            margin: 0 20px;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+        /* Dark Mode */
+        .dark-mode {
+            background-color: #121212;
+            color: #f1f1f1;
+        }
+
+        .dark-mode button {
+            background-color: #1a73e8;
+        }
+
+        .dark-mode .navbar {
+            background-color: #333;
+        }
+
+        .dark-mode .navbar a {
+            color: #f1f1f1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 24px;
+                margin-top: 20px;
+            }
+
+            .navbar {
+                font-size: 14px;
+                text-align: center;
+                padding: 10px 0;
+            }
+
+            .navbar a {
+                margin: 0 10px;
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 20px;
+                width: 100%;
+                margin: 8px 0;
+            }
+
+            /* Dark Mode Toggle Button */
+            .dark-mode-toggle {
+                padding: 10px 18px;
+                margin-top: 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body onload="loadDarkMode()">
+    <!-- Dark Mode Toggle Button -->
+    <button onclick="toggleDarkMode()" class="dark-mode-toggle">🌓 Toggle Dark Mode</button>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="/static/register.html">Register Face</a>
+        <a href="/static/detect.html">Start Detection</a>
+    </div>
+
+    <!-- Main Content -->
+    <h2>Face Recognition System</h2>
+    <p>Welcome to the Face Recognition Dashboard. Select an option to begin.</p>
+
+    <script>
+        // Dark Mode Functions
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+        }
+
+        function loadDarkMode() {
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+            }
+        }
+    </script>
+</body>
+</html>
